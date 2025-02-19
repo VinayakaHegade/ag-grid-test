@@ -1,8 +1,12 @@
-import React from 'react';
-import { AgGridReact } from 'ag-grid-react';
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
-import { CellValueChangedEvent } from 'ag-grid-community';
+import { useState } from "react";
+import { AgGridReact } from "ag-grid-react";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
+import {
+  CellValueChangedEvent,
+  ICellRendererParams,
+  ValueGetterParams,
+} from "ag-grid-community";
 import type { ColDef } from "ag-grid-community";
 
 interface RowData {
@@ -14,157 +18,151 @@ interface RowData {
   total: number;
 }
 
+interface ProductOption {
+  label: string;
+  price: number;
+}
+
+interface ProductOptions {
+  [key: string]: ProductOption[];
+}
+
+interface CellRendererProps extends ICellRendererParams<RowData> {
+  value: string;
+  setValue: (value: string) => void;
+}
+
 function App() {
-  const [rowData, setRowData] = React.useState<RowData[]>([
-    { id: 1, product: 'Laptop', category: 'Electronics', price: 1200, quantity: 1, total: 1200 },
-    { id: 2, product: 'Desk Chair', category: 'Office', price: 150, quantity: 1, total: 150 },
-    { id: 3, product: 'Coffee Maker', category: 'Kitchen', price: 80, quantity: 1, total: 80 },
-    { id: 4, product: 'Printer', category: 'Electronics', price: 300, quantity: 1, total: 300 }
+  const [rowData, setRowData] = useState<RowData[]>([
+    {
+      id: 1,
+      product: "2024",
+      category: "Electronics",
+      price: 1500,
+      quantity: 1,
+      total: 1500,
+    },
+    {
+      id: 2,
+      product: "2024",
+      category: "Kitchen",
+      price: 100,
+      quantity: 1,
+      total: 100,
+    },
+    {
+      id: 3,
+      product: "2024",
+      category: "Office",
+      price: 200,
+      quantity: 1,
+      total: 200,
+    },
   ]);
 
-  const productOptions = {
-    'Electronics': [
-      { label: 'Laptop', price: 1200 },
-      { label: 'Smartphone', price: 800 },
-      { label: 'Tablet', price: 500 },
-      { label: 'Printer', price: 300 }
+  const productOptions: ProductOptions = {
+    Electronics: [
+      { label: "2024", price: 1500 },
+      { label: "2023", price: 1200 },
     ],
-    'Office': [
-      { label: 'Desk Chair', price: 150 }
-    ],
-    'Kitchen': [
-      { label: 'Coffee Maker', price: 80 },
-      { label: 'Toaster', price: 40 },
-      { label: 'Blender', price: 60 }
-    ]
+    Office: [{ label: "2024", price: 200 }],
+    Kitchen: [{ label: "2024", price: 100 }],
   };
 
-  const CategorySelector = (props: any) => {
-    const categories = Object.keys(productOptions);
-
-    // Only row with id 1 will have dropdown for category
-    if (props.node.data.id === 1) {
-      return (
-        <select
-          value={props.value}
-          onChange={(e) => props.setValue(e.target.value)}
-          className="w-full h-full border-0 outline-none"
-        >
-          {categories.map(category => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      );
-    }
-
-    // All other rows show plain text
+  const CategorySelector = (props: CellRendererProps) => {
+    if (!props.node.data) return null;
     return <span>{props.value}</span>;
   };
 
-  const ProductSelector = (props: any) => {
+  const ProductSelector = (props: CellRendererProps) => {
+    if (!props.node.data) return null;
+
     const category = props.node.data.category;
-    const products = productOptions[category as keyof typeof productOptions];
+    const options = productOptions[category];
 
-    // Only show dropdown for row with id 1
-    if (props.node.data.id === 1) {
+    if (options.length > 1) {
       return (
         <select
           value={props.value}
           onChange={(e) => props.setValue(e.target.value)}
           className="w-full h-full border-0 outline-none"
         >
-          {products.map(product => (
-            <option key={product.label} value={product.label}>
-              {product.label}
+          {options.map((option) => (
+            <option key={option.label} value={option.label}>
+              {option.label}
             </option>
           ))}
         </select>
       );
     }
-
-    // All other rows show plain text
     return <span>{props.value}</span>;
   };
 
-  const columnDefs = [
-    { field: 'id', headerName: 'ID', width: 70 },
+  const columnDefs: ColDef<RowData>[] = [
+    { field: "id", headerName: "ID", width: 70 },
     {
-      field: 'category',
-      headerName: 'Category',
+      field: "category",
+      headerName: "Category",
       cellRenderer: CategorySelector,
-      editable: true,
-      width: 150
+      width: 150,
     },
     {
-      field: 'product',
-      headerName: 'Product',
+      field: "product",
+      headerName: "Year",
       cellRenderer: ProductSelector,
-      editable: true,
-      width: 150
+      editable: ({ data }) => {
+        const category = data?.category || "";
+        const options = productOptions[category];
+        return options.length > 1;
+      },
+      width: 150,
     },
-    { field: 'price', headerName: 'Price ($)', width: 120 },
+    { field: "price", headerName: "Price ($)", width: 120 },
     {
-      field: 'quantity',
-      headerName: 'Quantity',
+      field: "quantity",
+      headerName: "Quantity",
       editable: true,
-      width: 120
+      width: 120,
     },
     {
-      field: 'total',
-      headerName: 'Total ($)',
-      valueGetter: (params: any) => params.data.price * params.data.quantity
-    }
+      field: "total",
+      headerName: "Total ($)",
+      valueGetter: (params: ValueGetterParams<RowData>) =>
+        (params.data?.price || 0) * (params.data?.quantity || 0),
+    },
   ];
 
-  const onCellValueChanged = (event: CellValueChangedEvent) => {
+  const onCellValueChanged = (event: CellValueChangedEvent<RowData>) => {
     const { data, colDef, newValue } = event;
+    if (!data) return;
+
     const updatedData = [...rowData];
-    const rowIndex = rowData.findIndex(row => row.id === data.id);
+    const rowIndex = rowData.findIndex((row) => row.id === data.id);
 
-    // Only allow changes for row with id 1
-    if (data.id === 1) {
-      if (colDef.field === 'category') {
-        // When category changes, update product to first product in new category
-        const newProducts = productOptions[newValue as keyof typeof productOptions];
-        const newProduct = newProducts[0].label;
-        const newPrice = newProducts[0].price;
-        updatedData[rowIndex] = {
-          ...data,
-          category: newValue,
-          product: newProduct,
-          price: newPrice,
-          total: newPrice * data.quantity
-        };
-      } else if (colDef.field === 'product') {
-        // When product changes, update price
-        const products = productOptions[data.category as keyof typeof productOptions];
-        const newPrice = products.find(p => p.label === newValue)?.price || 0;
-        updatedData[rowIndex] = {
-          ...data,
-          product: newValue,
-          price: newPrice,
-          total: newPrice * data.quantity
-        };
-      }
-    }
-
-    if (colDef.field === 'quantity') {
-      // Update total when quantity changes (allowed for all rows)
+    if (colDef.field === "product" && data.category === "Electronics") {
+      const newPrice =
+        productOptions.Electronics.find((p) => p.label === newValue)?.price ||
+        0;
+      updatedData[rowIndex] = {
+        ...data,
+        product: newValue as string,
+        price: newPrice,
+        total: newPrice * data.quantity,
+      };
+    } else if (colDef.field === "quantity") {
       updatedData[rowIndex] = {
         ...data,
         quantity: Number(newValue),
-        total: data.price * Number(newValue)
+        total: data.price * Number(newValue),
       };
     }
 
     setRowData(updatedData);
   };
 
-   const defaultColDef: ColDef = {
-     flex: 1,
-   };
+  const defaultColDef: ColDef<RowData> = {
+    flex: 1,
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -175,8 +173,6 @@ function App() {
             rowData={rowData}
             columnDefs={columnDefs}
             onCellValueChanged={onCellValueChanged}
-            // suppressScrollOnNewData={true}
-            // animateRows={true}
             defaultColDef={defaultColDef}
           />
         </div>
