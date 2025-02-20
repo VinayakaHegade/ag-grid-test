@@ -11,7 +11,7 @@ import type { ColDef } from "ag-grid-community";
 
 interface RowData {
   id: number;
-  product: string;
+  year: string;
   category: string;
   price: number;
   quantity: number;
@@ -36,7 +36,7 @@ function App() {
   const [rowData, setRowData] = useState<RowData[]>([
     {
       id: 1,
-      product: "2024",
+      year: "2024",
       category: "Electronics",
       price: 1500,
       quantity: 1,
@@ -44,7 +44,7 @@ function App() {
     },
     {
       id: 2,
-      product: "2024",
+      year: "2024",
       category: "Kitchen",
       price: 100,
       quantity: 1,
@@ -52,7 +52,7 @@ function App() {
     },
     {
       id: 3,
-      product: "2024",
+      year: "2024",
       category: "Office",
       price: 200,
       quantity: 1,
@@ -67,11 +67,6 @@ function App() {
     ],
     Office: [{ label: "2024", price: 200 }],
     Kitchen: [{ label: "2024", price: 100 }],
-  };
-
-  const CategorySelector = (props: CellRendererProps) => {
-    if (!props.node.data) return null;
-    return <span>{props.value}</span>;
   };
 
   const ProductSelector = (props: CellRendererProps) => {
@@ -103,11 +98,9 @@ function App() {
     {
       field: "category",
       headerName: "Category",
-      cellRenderer: CategorySelector,
-      width: 150,
     },
     {
-      field: "product",
+      field: "year",
       headerName: "Year",
       cellRenderer: ProductSelector,
       editable: ({ data }) => {
@@ -115,14 +108,11 @@ function App() {
         const options = productOptions[category];
         return options.length > 1;
       },
-      width: 150,
     },
     { field: "price", headerName: "Price ($)", width: 120 },
     {
       field: "quantity",
       headerName: "Quantity",
-      editable: true,
-      width: 120,
     },
     {
       field: "total",
@@ -133,29 +123,22 @@ function App() {
   ];
 
   const onCellValueChanged = (event: CellValueChangedEvent<RowData>) => {
-    const { data, colDef, newValue } = event;
+    const { data, newValue } = event;
     if (!data) return;
 
     const updatedData = [...rowData];
     const rowIndex = rowData.findIndex((row) => row.id === data.id);
 
-    if (colDef.field === "product" && data.category === "Electronics") {
-      const newPrice =
-        productOptions.Electronics.find((p) => p.label === newValue)?.price ||
-        0;
-      updatedData[rowIndex] = {
-        ...data,
-        product: newValue as string,
-        price: newPrice,
-        total: newPrice * data.quantity,
-      };
-    } else if (colDef.field === "quantity") {
-      updatedData[rowIndex] = {
-        ...data,
-        quantity: Number(newValue),
-        total: data.price * Number(newValue),
-      };
-    }
+    const newPrice =
+      productOptions[data.category]?.find((p) => p.label === newValue)?.price ||
+      0;
+
+    updatedData[rowIndex] = {
+      ...data,
+      year: newValue,
+      price: newPrice,
+      total: newPrice * data.quantity,
+    };
 
     setRowData(updatedData);
   };
